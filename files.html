@@ -1,0 +1,148 @@
+<html>
+	<head>
+		<style>
+			div {
+			    box-sizing: border-box; font:10pt arial; line-height: 1.5;
+			}
+			.column{float: left; padding:10px;}
+			.row:after{content:""; display: table; clear: both;margin:0 0 2px 0;}
+			.col1 {width:30%;}
+			.col2 {width:60%;background-color:#eeeeee}
+			.col3 {width:10%; text-align:left;}
+			.gray {color:#bbbbbb;}
+			.red {color:#ff0000;}
+			.mt {margin-top:20px;}
+			.blue {color:#0000ff;}
+			.nwrap {white-space: nowrap;}
+			
+			a[href="javascript:void(0)"] {
+			    text-decoration: none; 
+			}
+
+		</style>
+	</head>
+	<body>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+		<div class="row" style="width: 600px">
+			<div class="column col1" style=""><span style="white-space:nowrap">Загруженные файлы:</span></div>
+			<div class="column col2" style="border-radius:0 10px 0 0;" id="loaded_files_list"><span class="gray">...</span></div>
+		</div>
+		<div class="row" style="width: 600px">
+			<div class="column col1" style=""><span style="white-space:nowrap">Добавить файлы:</span></div>
+			<div class="column col2" style="border-radius:0 0 10px 0;" id="loading_files_list"></div>
+			<div class="column col3" style="display:none" id="addFileButton"><label for="myFiles" style="cursor:pointer;padding:10px">&#128206;</label></div>
+		</div>
+
+
+		<input id="myFiles" type="file" multiple style="display:none">
+
+
+		<script>
+		var loading_files_list = new Array();
+		refresh_loading_files_list()
+    
+		function pullfiles(){
+			var prev_loading_files_qnt = loading_files_list.length;
+		    var fileInput = document.getElementById("myFiles");
+   	   		var files = fileInput.files;
+        	var fl=files.length;
+        	var i=0;
+    
+        	while (i < fl) {
+            	var file = files[i];
+				loading_files_list.push(file);
+        	    i++;
+		    }
+        	refresh_loading_files_list(prev_loading_files_qnt);
+		}
+		function upload_files(){
+        	var fl=loading_files_list.length;
+			if (fl) {
+				let data = new FormData();
+				data.append('action', 'upload_files');
+    
+		    	var i=0;
+    
+			    while (i < fl) {
+					var file = loading_files_list.shift();
+					data.append(file.name, file);
+		        	i++;
+			    }
+				pll('cgi-bin/clip.pl','loaded_files_list',data);
+			    refresh_loading_files_list();
+			}
+		}
+    
+		function refresh_loading_files_list(prev_loading_files_qnt){
+			var result;
+			var style;
+			var fl = loading_files_list.length;
+    
+			if (fl) {
+				var loading_elements = new Array();
+		    	var i=0;
+				var elem;
+    
+        		while (i < fl) {
+					if (i >= prev_loading_files_qnt){ // Немного эффектов для новых файлов
+						style = ' style="display:none" new-file="true"';
+						}
+					else {style = ''}
+
+		        	elem = '<span class="nwrap" id="loading_file_' + i  + '"' + style + '>' + loading_files_list[i].name + 
+						' <span><a href="javascript:void(0)" class="red" onClick="remove_loading_file(' + i  + ')">[x]</a></span></span>';
+    
+					loading_elements.push(elem);
+        	    	i++;
+				}
+    
+				result = loading_elements.join("; ");
+				result += '<div class="mt"><a href="javascript:void(0)" class="blue" onClick="upload_files()">Загрузить файлы на сервер</a></div>';
+			} 
+			else {
+				result = '<span class="gray">Список пуст</span>';
+			}
+        	document.getElementById("loading_files_list").innerHTML = result;
+
+			$('[new-file=true]').fadeIn(500)
+
+		}
+		function remove_loading_file(index){
+			$('#loading_file_' + index).fadeOut(500)
+			loading_files_list.splice(index, 1)
+			setTimeout(function() { refresh_loading_files_list() }, 500)
+		}
+		function remove_loaded_file(file_name, file_id){
+			$('#loaded_file_' + file_id).fadeOut(500)
+        	var url = 'cgi-bin/clip.pl?action=remove_file&file_name=' + file_name;
+		    pll(url, 'loaded_files_list');
+		}
+    
+    
+		function pll(url, where, data){
+			if (data) {method = "POST";}
+			else {method = "GET";data = null;}
+    
+			let xhr = new XMLHttpRequest;
+			xhr.open(method, url);
+			xhr.send(data);
+			xhr.onload = function() {
+				if (xhr.status == 200) {
+					response = xhr.response;
+					document.getElementById(where).innerHTML=response;
+				}
+			}
+		}
+
+		document.getElementById("myFiles").onchange=pullfiles;
+
+		function ready() {
+			pll('cgi-bin/clip.pl?action=get_loaded_files','loaded_files_list');
+			$('#addFileButton').show(500)
+		}
+
+		document.addEventListener("DOMContentLoaded", ready);
+
+		</script>
+	</body>
+</html>
