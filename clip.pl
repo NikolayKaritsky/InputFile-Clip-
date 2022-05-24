@@ -1,12 +1,9 @@
 #!/usr/bin/perl
-#use strict;
-use CGI qw/:standard/;
-use CGI;
-use Fcntl;
-
-use LWP;
-use URI::Escape;
+use strict;
 use warnings;
+
+use CGI qw/:standard/;
+use Fcntl;
 
 my $wwwFolder='../www/';
 my $filePath='clip/files/';
@@ -75,13 +72,13 @@ else
 	if ($query{action} eq 'upload_files')
 	{
 		delete $query{action};
-	    $i=0;
+	    my $i=0;
 		foreach (keys %query)
 		{
-			$file_to_write=$query{$_};
-
-    	    sysopen F, $wwwFolder.$filePath.$_, O_CREAT | O_WRONLY, 0444;
-        	binmode F || die print "Cannot binmode $file $!\n";
+			my $file_to_write=$query{$_};
+			my $fileName = $wwwFolder.$filePath.$_;
+    	    sysopen F, $fileName, O_CREAT | O_WRONLY, 0444;
+        	binmode F or die "Cannot binmode $fileName $!\n";
 	        print F while (<$file_to_write>);
     	    close F;
 		}
